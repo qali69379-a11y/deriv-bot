@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Bot - Powered By Deriv</title>
+
+<!-- PWA Meta Tags -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Deriv Bot">
+<meta name="application-name" content="Deriv Bot">
+<meta name="theme-color" content="#0a0e1a">
+<meta name="description" content="Auto Trading Bot powered by Deriv">
+
+<!-- PWA Manifest (inline via data URI) -->
+<link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Bot%20-%20Powered%20By%20Deriv%22,%22short_name%22:%22Deriv%20Bot%22,%22description%22:%22Auto%20Trading%20Bot%20powered%20by%20Deriv%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%230a0e1a%22,%22theme_color%22:%22%230a0e1a%22,%22orientation%22:%22portrait-primary%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20192%20192'%3E%3Crect%20width='192'%20height='192'%20rx='32'%20fill='%23ff444f'/%3E%3Ctext%20x='96'%20y='130'%20font-size='100'%20text-anchor='middle'%20fill='white'%20font-family='Arial'%20font-weight='bold'%3EB%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22,%22purpose%22:%22any%20maskable%22}]}">
+
+<!-- Apple Touch Icon (inline SVG as base64) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20180%20180'%3E%3Crect%20width='180'%20height='180'%20rx='28'%20fill='%23ff444f'/%3E%3Ctext%20x='90'%20y='125'%20font-size='100'%20text-anchor='middle'%20fill='white'%20font-family='Arial'%20font-weight='bold'%3EB%3C/text%3E%3C/svg%3E">
+
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #111827;
+    --bg3: #1a2235;
+    --card: #141c2e;
+    --border: #1e2d45;
+    --accent: #ff444f;
+    --green: #00c878;
+    --blue: #4d9fff;
+    --yellow: #ffd166;
+    --text: #e8edf5;
+    --text2: #8a9bb5;
+    --text3: #4a5a75;
+    --red: #ff444f;
+    --sidebar: 220px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'IBM Plex Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; overflow:hidden; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width:var(--sidebar); min-height:100vh; background:var(--bg2);
+    border-right:1px solid var(--border); display:flex; flex-direction:column;
+    position:fixed; left:0; top:0; z-index:100;
+  }
+  .logo { padding:20px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+  .logo-icon { width:36px; height:36px; background:var(--accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; color:#fff; }
+  .logo-text { font-size:13px; font-weight:600; line-height:1.2; }
+  .logo-text span { color:var(--text2); font-weight:400; font-size:11px; display:block; }
+
+  .nav { padding:12px 8px; flex:1; }
+  .nav-section { font-size:10px; color:var(--text3); font-weight:600; letter-spacing:1px; padding:8px 8px 4px; text-transform:uppercase; }
+  .nav-item {
+    display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px;
+    cursor:pointer; font-size:13px; color:var(--text2); transition:all .2s; margin-bottom:2px;
+  }
+  .nav-item:hover { background:var(--bg3); color:var(--text); }
+  .nav-item.active { background:rgba(255,68,79,0.12); color:var(--accent); }
+  .nav-item .icon { width:18px; text-align:center; font-size:15px; }
+  .nav-item .badge { margin-left:auto; background:var(--accent); color:#fff; font-size:10px; padding:1px 6px; border-radius:10px; }
+
+  .sidebar-bottom { padding:12px; border-top:1px solid var(--border); }
+  .account-box { background:var(--bg3); border-radius:10px; padding:10px 12px; }
+  .account-box .label { font-size:10px; color:var(--text3); }
+  .account-box .balance { font-size:18px; font-weight:700; color:var(--green); font-family:'IBM Plex Mono',monospace; }
+  .account-box .acc-id { font-size:11px; color:var(--text2); margin-top:2px; }
+
+  /* MAIN */
+  .main { margin-left:var(--sidebar); flex:1; display:flex; flex-direction:column; min-height:100vh; }
+
+  /* TOPBAR */
+  .topbar {
+    height:56px; background:var(--bg2); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; padding:0 20px; gap:12px; position:sticky; top:0; z-index:50;
+  }
+  .topbar-title { font-size:15px; font-weight:600; }
+  .topbar-sub { font-size:12px; color:var(--text2); margin-left:4px; }
+  .spacer { flex:1; }
+  .btn { padding:7px 14px; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; border:none; transition:all .2s; font-family:inherit; }
+  .btn-outline { background:transparent; border:1px solid var(--border); color:var(--text2); }
+  .btn-outline:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-red { background:var(--accent); color:#fff; }
+  .btn-red:hover { background:#e03039; }
+  .btn-green { background:var(--green); color:#000; }
+  .btn-green:hover { background:#00a866; }
+  .status-dot { width:8px; height:8px; border-radius:50%; }
+  .status-dot.connected { background:var(--green); box-shadow:0 0 6px var(--green); }
+  .status-dot.disconnected { background:var(--text3); }
+  .status-txt { font-size:12px; color:var(--text2); }
+
+  /* CONTENT */
+  .content { padding:20px; display:grid; grid-template-columns:1fr 340px; gap:16px; }
+
+  /* CARDS */
+  .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .card-title { font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px; display:flex; align-items:center; gap:6px; }
+  .card-title .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); }
+
+  /* STATS ROW */
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+  .stat-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px; }
+  .stat-label { font-size:11px; color:var(--text3); margin-bottom:6px; }
+  .stat-value { font-size:20px; font-weight:700; font-family:'IBM Plex Mono',monospace; }
+  .stat-value.green { color:var(--green); }
+  .stat-value.red { color:var(--red); }
+  .stat-value.blue { color:var(--blue); }
+  .stat-value.yellow { color:var(--yellow); }
+  .stat-change { font-size:11px; margin-top:4px; }
+  .stat-change.up { color:var(--green); }
+  .stat-change.down { color:var(--red); }
+
+  /* BOT CONFIG */
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .form-group { display:flex; flex-direction:column; gap:5px; }
+  .form-label { font-size:11px; color:var(--text2); }
+  .form-input {
+    background:var(--bg3); border:1px solid var(--border); color:var(--text);
+    padding:8px 10px; border-radius:7px; font-size:13px; font-family:inherit;
+    outline:none; transition:border .2s;
+  }
+  .form-input:focus { border-color:var(--accent); }
+  select.form-input option { background:var(--bg3); }
+
+  /* TRADE LOG */
+  .trade-log { max-height:280px; overflow-y:auto; }
+  .trade-log::-webkit-scrollbar { width:4px; }
+  .trade-log::-webkit-scrollbar-track { background:transparent; }
+  .trade-log::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .trade-row {
+    display:grid; grid-template-columns:90px 1fr 80px 80px 80px;
+    gap:8px; padding:8px 10px; border-radius:7px; font-size:12px;
+    margin-bottom:4px; align-items:center; font-family:'IBM Plex Mono',monospace;
+  }
+  .trade-row:hover { background:var(--bg3); }
+  .trade-row .type { font-weight:600; }
+  .trade-row .type.rise { color:var(--green); }
+  .trade-row .type.fall { color:var(--red); }
+  .trade-row .result { font-weight:600; }
+  .trade-row .result.win { color:var(--green); }
+  .trade-row .result.loss { color:var(--red); }
+  .trade-row .pending { color:var(--yellow); }
+  .trade-header { color:var(--text3) !important; font-size:10px !important; text-transform:uppercase; letter-spacing:.5px; }
+
+  /* BOT STATUS */
+  .bot-status { display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--bg3); border-radius:8px; margin-bottom:12px; }
+  .bot-status .pulse { width:10px; height:10px; border-radius:50%; position:relative; }
+  .bot-status .pulse.running { background:var(--green); }
+  .bot-status .pulse.running::after {
+    content:''; position:absolute; inset:-3px; border-radius:50%;
+    border:2px solid var(--green); animation:pulse 1.2s ease-out infinite; opacity:.6;
+  }
+  .bot-status .pulse.stopped { background:var(--text3); }
+  @keyframes pulse { to { transform:scale(1.8); opacity:0; } }
+  .bot-status .status-label { font-size:13px; font-weight:600; }
+  .bot-status .status-label.running { color:var(--green); }
+  .bot-status .status-label.stopped { color:var(--text2); }
+  .bot-status .trades-count { margin-left:auto; font-size:11px; color:var(--text3); font-family:'IBM Plex Mono',monospace; }
+
+  /* PROGRESS */
+  .progress-bar { background:var(--bg3); border-radius:4px; height:6px; margin:8px 0; overflow:hidden; }
+  .progress-fill { height:100%; border-radius:4px; transition:width .5s; }
+  .progress-fill.green { background:var(--green); }
+  .progress-fill.red { background:var(--red); }
+
+  /* MARKET SELECTOR */
+  .market-tabs { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+  .market-tab { padding:5px 12px; border-radius:20px; font-size:11px; font-weight:600; cursor:pointer; border:1px solid var(--border); color:var(--text2); background:transparent; transition:all .2s; font-family:inherit; }
+  .market-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .market-tab:hover:not(.active) { border-color:var(--text2); color:var(--text); }
+
+  /* TOKEN INPUT */
+  .token-overlay {
+    position:fixed; inset:0; background:rgba(10,14,26,.95); z-index:200;
+    display:flex; align-items:center; justify-content:center;
+    backdrop-filter:blur(4px);
+  }
+  .token-box { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:32px; width:400px; }
+  .token-box h2 { font-size:20px; font-weight:700; margin-bottom:6px; }
+  .token-box p { font-size:13px; color:var(--text2); margin-bottom:20px; line-height:1.5; }
+  .token-box .form-input { width:100%; margin-bottom:12px; }
+  .token-box .btn { width:100%; padding:11px; font-size:14px; }
+
+  /* LIVE TICK */
+  .tick-display { display:flex; align-items:baseline; gap:8px; margin-bottom:8px; }
+  .tick-price { font-size:28px; font-weight:700; font-family:'IBM Plex Mono',monospace; }
+  .tick-change { font-size:13px; }
+  .tick-change.up { color:var(--green); }
+  .tick-change.down { color:var(--red); }
+
+  /* CHART AREA */
+  .mini-chart { width:100%; height:80px; position:relative; overflow:hidden; }
+  .mini-chart canvas { width:100% !important; height:100% !important; }
+
+  /* RESPONSIVE */
+  @media(max-width:900px) {
+    .content { grid-template-columns:1fr; }
+    .stats-row { grid-template-columns:repeat(2,1fr); }
+  }
+  @media(max-width:600px) {
+    .sidebar { width:60px; }
+    .sidebar .logo-text, .sidebar .nav-item span, .sidebar .account-box .balance, .sidebar .account-box .acc-id, .sidebar .account-box .label { display:none; }
+    .main { margin-left:60px; }
+    .nav-item { justify-content:center; padding:10px; }
+    .nav-item .icon { width:auto; }
+    .stats-row { grid-template-columns:1fr 1fr; }
+  }
+
+  .divider { height:1px; background:var(--border); margin:12px 0; }
+
+  /* PWA MOBILE BOTTOM NAV */
+  .mobile-nav {
+    display:none;
+    position:fixed; bottom:0; left:0; right:0;
+    background:var(--bg2); border-top:1px solid var(--border);
+    z-index:200; padding:6px 0;
+    padding-bottom:env(safe-area-inset-bottom, 6px);
+  }
+  .mobile-nav-items { display:flex; justify-content:space-around; align-items:center; }
+  .mobile-nav-item {
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:6px 12px; border-radius:8px; cursor:pointer;
+    font-size:10px; color:var(--text2); transition:all .2s; min-width:60px;
+    border:none; background:transparent; font-family:inherit; position:relative;
+  }
+  .mobile-nav-item .m-icon { font-size:20px; line-height:1; }
+  .mobile-nav-item.active { color:var(--accent); }
+  .bot-on-dot {
+    position:absolute; top:2px; right:10px;
+    width:8px; height:8px; background:var(--green); border-radius:50%;
+    display:none;
+  }
+
+  /* PWA INSTALL BANNER */
+  .pwa-install-banner {
+    position:fixed; top:0; left:0; right:0; z-index:500;
+    background:linear-gradient(135deg,#ff444f,#c0392b);
+    color:#fff; padding:10px 16px;
+    display:flex; align-items:center; gap:10px;
+    font-size:13px; font-weight:500;
+    transform:translateY(-120%); transition:transform .4s ease;
+  }
+  .pwa-install-banner.show { transform:translateY(0); }
+  .pwa-install-banner .install-btn {
+    margin-left:auto; background:#fff; color:#ff444f;
+    border:none; padding:5px 14px; border-radius:6px;
+    font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;
+    flex-shrink:0;
+  }
+  .pwa-install-banner .close-x {
+    background:transparent; border:none; color:#fff; font-size:18px;
+    cursor:pointer; padding:0 2px; opacity:.8; flex-shrink:0;
+  }
+
+  @media(max-width:768px) {
+    .sidebar { display:none !important; }
+    .main { margin-left:0 !important; }
+    .mobile-nav { display:block; }
+    .content { padding:12px 12px 80px 12px; }
+    .topbar { padding:0 12px; }
+    body { overflow:auto; }
+    .stats-row { grid-template-columns:repeat(2,1fr); }
+  }
+
+  @supports(padding-top: env(safe-area-inset-top)) {
+    .topbar { padding-top:env(safe-area-inset-top,0); height:calc(56px + env(safe-area-inset-top,0)); }
+  }
+  .flex { display:flex; align-items:center; }
+  .gap-8 { gap:8px; }
+  .ml-auto { margin-left:auto; }
+  .text-sm { font-size:12px; }
+  .text-xs { font-size:11px; }
+  .text-green { color:var(--green); }
+  .text-red { color:var(--red); }
+  .text-muted { color:var(--text2); }
+  .font-mono { font-family:'IBM Plex Mono',monospace; }
+  .mt-8 { margin-top:8px; }
+  .mb-8 { margin-bottom:8px; }
+</style>
+</head>
+<body>
+
+<!-- PWA INSTALL BANNER -->
+<div class="pwa-install-banner" id="installBanner">
+  <span>📲</span>
+  <span>Home screen par install karein — bilkul app jaisa!</span>
+  <button class="install-btn" id="installBtn">Install</button>
+  <button class="close-x" id="closeBanner">✕</button>
+</div>
+
+<!-- TOKEN OVERLAY -->
+<div class="token-overlay" id="tokenOverlay">
+  <div class="token-box">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div class="logo-icon">B</div>
+      <div>
+        <div style="font-size:16px;font-weight:700;">Bot Powered By Deriv</div>
+        <div style="font-size:11px;color:var(--text2);">Connect your account</div>
+      </div>
+    </div>
+    <p>Apna <strong>Deriv API Token</strong> enter karein. Token generate karne ke liye: <span style="color:var(--blue);">app.deriv.com → Account Settings → API Token</span></p>
+    <input type="password" class="form-input" id="tokenInput" placeholder="Paste your API token here...">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">⚠️ Read + Trade permissions zaroori hain</div>
+    <button class="btn btn-red" onclick="connectAPI()">Connect Account</button>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">B</div>
+    <div class="logo-text">Bot Deriv<span>Auto Trading</span></div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Main</div>
+    <div class="nav-item active" onclick="setPage('dashboard')">
+      <span class="icon">📊</span><span>Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="setPage('bot')">
+      <span class="icon">🤖</span><span>Bot</span><span class="badge" id="navBadge" style="display:none">ON</span>
+    </div>
+    <div class="nav-item" onclick="setPage('history')">
+      <span class="icon">📋</span><span>History</span>
+    </div>
+    <div class="nav-section">Settings</div>
+    <div class="nav-item" onclick="setPage('settings')">
+      <span class="icon">⚙️</span><span>Settings</span>
+    </div>
+    <div class="nav-item" onclick="logout()" style="color:var(--red);">
+      <span class="icon">🚪</span><span>Logout</span>
+    </div>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="account-box">
+      <div class="label">BALANCE</div>
+      <div class="balance" id="sideBalance">--</div>
+      <div class="acc-id" id="sideAccId">Not connected</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title" id="pageTitle">Dashboard</div>
+    <div class="topbar-sub" id="pageSub">Overview</div>
+    <div class="spacer"></div>
+    <div class="status-dot disconnected" id="connDot"></div>
+    <div class="status-txt" id="connTxt">Disconnected</div>
+    <button class="btn btn-outline" onclick="logout()">Disconnect</button>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="mainContent">
+    <!-- Loaded dynamically -->
+  </div>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-items">
+    <button class="mobile-nav-item active" id="mNavDash" onclick="mobileNav('dashboard',this)">
+      <span class="m-icon">📊</span><span>Dashboard</span>
+    </button>
+    <button class="mobile-nav-item" id="mNavBot" onclick="mobileNav('bot',this)">
+      <span class="m-icon">🤖</span><span>Bot</span>
+      <span class="bot-on-dot" id="mBotDot"></span>
+    </button>
+    <button class="mobile-nav-item" id="mNavHist" onclick="mobileNav('history',this)">
+      <span class="m-icon">📋</span><span>History</span>
+    </button>
+    <button class="mobile-nav-item" id="mNavSet" onclick="mobileNav('settings',this)">
+      <span class="m-icon">⚙️</span><span>Settings</span>
+    </button>
+  </div>
+</nav>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────
+let ws = null;
+let apiToken = '';
+let accountInfo = {};
+let balance = 0;
+let botRunning = false;
+let tradeHistory = [];
+let currentPage = 'dashboard';
+let botConfig = {
+  market: 'R_100',
+  contractType: 'CALL',
+  amount: 1,
+  duration: 5,
+  durationUnit: 't',
+  martingale: false,
+  martingaleMultiplier: 2,
+  maxTrades: 50,
+  stopLoss: 10,
+  takeProfit: 20
+};
+let botStats = { total:0, wins:0, losses:0, profit:0, currentStreak:0 };
+let tickPrices = {};
+let currentContractId = null;
+let wsReady = false;
+let pendingRequests = {};
+let reqId = 1;
+let tickHistory = [];
+
+// ─── WS ──────────────────────────────────────────────────
+function connectDeriv(token) {
+  ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+  ws.onopen = () => {
+    send({ authorize: token });
+  };
+  ws.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    handleMessage(data);
+  };
+  ws.onerror = () => showToast('Connection error!', 'red');
+  ws.onclose = () => {
+    wsReady = false;
+    document.getElementById('connDot').className = 'status-dot disconnected';
+    document.getElementById('connTxt').textContent = 'Disconnected';
+    if (botRunning) stopBot();
+  };
+}
+
+function send(obj) {
+  if (ws && ws.readyState === 1) {
+    obj.req_id = reqId++;
+    ws.send(JSON.stringify(obj));
+    return obj.req_id;
+  }
+}
+
+function handleMessage(d) {
+  if (d.error) {
+    showToast(d.error.message, 'red');
+    if (d.error.code === 'InvalidToken') { logout(); }
+    return;
+  }
+
+  if (d.msg_type === 'authorize') {
+    wsReady = true;
+    accountInfo = d.authorize;
+    balance = d.authorize.balance;
+    document.getElementById('connDot').className = 'status-dot connected';
+    document.getElementById('connTxt').textContent = 'Connected';
+    document.getElementById('sideBalance').textContent = balance.toFixed(2) + ' ' + (d.authorize.currency || 'USD');
+    document.getElementById('sideAccId').textContent = d.authorize.loginid || '';
+    document.getElementById('tokenOverlay').style.display = 'none';
+    subscribeTick(botConfig.market);
+    loadPage(currentPage);
+    showToast('Connected! Welcome ' + (d.authorize.fullname || d.authorize.loginid), 'green');
+  }
+
+  if (d.msg_type === 'balance') {
+    balance = d.balance.balance;
+    document.getElementById('sideBalance').textContent = balance.toFixed(2) + ' ' + d.balance.currency;
+    updateBalanceStat();
+  }
+
+  if (d.msg_type === 'tick') {
+    const t = d.tick;
+    tickPrices[t.symbol] = t.quote;
+    tickHistory.push({ time: t.epoch, price: t.quote });
+    if (tickHistory.length > 60) tickHistory.shift();
+    updateTickDisplay(t);
+  }
+
+  if (d.msg_type === 'buy') {
+    currentContractId = d.buy.contract_id;
+    const entry = {
+      id: d.buy.contract_id,
+      time: new Date().toLocaleTimeString(),
+      market: botConfig.market,
+      type: botConfig.contractType === 'CALL' ? 'Rise' : 'Fall',
+      amount: botConfig.amount,
+      buyPrice: d.buy.buy_price,
+      result: 'pending',
+      profit: 0
+    };
+    tradeHistory.unshift(entry);
+    botStats.total++;
+    updateTradeTable();
+    subscribeContract(d.buy.contract_id);
+  }
+
+  if (d.msg_type === 'proposal_open_contract') {
+    const c = d.proposal_open_contract;
+    if (c.is_sold) {
+      const idx = tradeHistory.findIndex(t => t.id == c.contract_id);
+      if (idx !== -1) {
+        const won = c.profit > 0;
+        tradeHistory[idx].result = won ? 'win' : 'loss';
+        tradeHistory[idx].profit = c.profit;
+        if (won) { botStats.wins++; botStats.profit += c.profit; }
+        else { botStats.losses++; botStats.profit += c.profit; }
+        updateTradeTable();
+        updateBotStats();
+        // Martingale
+        if (!won && botConfig.martingale) {
+          botConfig.amount = parseFloat((botConfig.amount * botConfig.martingaleMultiplier).toFixed(2));
+        } else {
+          // reset to original
+        }
+        // Next trade after 1s
+        if (botRunning && botStats.total < botConfig.maxTrades) {
+          setTimeout(placeTrade, 1200);
+        } else if (botStats.total >= botConfig.maxTrades) {
+          stopBot();
+          showToast('Max trades reached!', 'yellow');
+        }
+      }
+    }
+  }
+}
+
+function subscribeTick(symbol) {
+  send({ ticks: symbol, subscribe: 1 });
+}
+
+function subscribeContract(id) {
+  send({ proposal_open_contract: 1, contract_id: id, subscribe: 1 });
+}
+
+function subscribeBalance() {
+  send({ balance: 1, subscribe: 1 });
+}
+
+// ─── BOT ────────────────────────────────────────────────
+function startBot() {
+  if (!wsReady) { showToast('Connect account first!', 'red'); return; }
+  botRunning = true;
+  document.getElementById('navBadge').style.display = 'inline';
+  updateMobileNavBotDot();
+  subscribeBalance();
+  placeTrade();
+  renderBotPage();
+  showToast('Bot started!', 'green');
+}
+
+function stopBot() {
+  botRunning = false;
+  document.getElementById('navBadge').style.display = 'none';
+  updateMobileNavBotDot();
+  renderBotPage();
+  showToast('Bot stopped!', 'red');
+}
+
+function placeTrade() {
+  if (!botRunning) return;
+  // Check stop loss / take profit
+  if (botStats.profit <= -Math.abs(botConfig.stopLoss)) {
+    stopBot(); showToast('Stop Loss hit!', 'red'); return;
+  }
+  if (botStats.profit >= Math.abs(botConfig.takeProfit)) {
+    stopBot(); showToast('Take Profit hit! 🎉', 'green'); return;
+  }
+  send({
+    buy: 1,
+    price: botConfig.amount,
+    parameters: {
+      contract_type: botConfig.contractType,
+      symbol: botConfig.market,
+      duration: botConfig.duration,
+      duration_unit: botConfig.durationUnit,
+      basis: 'stake',
+      currency: accountInfo.currency || 'USD',
+      amount: botConfig.amount
+    }
+  });
+}
+
+// ─── PAGES ───────────────────────────────────────────────
+function setPage(p) {
+  currentPage = p;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  loadPage(p);
+}
+
+function loadPage(p) {
+  const titles = { dashboard:'Dashboard', bot:'Bot Control', history:'Trade History', settings:'Settings' };
+  const subs = { dashboard:'Overview', bot:'Auto Trading Bot', history:'All Trades', settings:'Configuration' };
+  document.getElementById('pageTitle').textContent = titles[p] || p;
+  document.getElementById('pageSub').textContent = subs[p] || '';
+  if (p === 'dashboard') renderDashboard();
+  else if (p === 'bot') renderBotPage();
+  else if (p === 'history') renderHistory();
+  else if (p === 'settings') renderSettings();
+}
+
+function renderDashboard() {
+  const winRate = botStats.total > 0 ? ((botStats.wins / botStats.total) * 100).toFixed(1) : '0.0';
+  const profitColor = botStats.profit >= 0 ? 'green' : 'red';
+  document.getElementById('mainContent').innerHTML = `
+    <div style="grid-column:1/-1">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Account Balance</div>
+          <div class="stat-value green" id="statBalance">${balance.toFixed(2)}</div>
+          <div class="stat-change up">${accountInfo.currency || 'USD'}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Profit</div>
+          <div class="stat-value ${profitColor}" id="statProfit">${botStats.profit >= 0 ? '+' : ''}${botStats.profit.toFixed(2)}</div>
+          <div class="stat-change ${profitColor}">${accountInfo.currency || 'USD'}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Win Rate</div>
+          <div class="stat-value blue">${winRate}%</div>
+          <div class="stat-change up">${botStats.wins}W / ${botStats.losses}L</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Trades</div>
+          <div class="stat-value yellow">${botStats.total}</div>
+          <div class="stat-change" style="color:var(--text2)">All time</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:16px">
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Live Market</div>
+          <div class="market-tabs">
+            ${['R_10','R_25','R_50','R_75','R_100'].map(m => `<button class="market-tab ${botConfig.market===m?'active':''}" onclick="changeMarket('${m}')">${m}</button>`).join('')}
+          </div>
+          <div class="tick-display">
+            <div class="tick-price" id="tickPrice">${tickPrices[botConfig.market] || '--'}</div>
+            <div class="tick-change up" id="tickChange">● LIVE</div>
+          </div>
+          <canvas id="miniChart" class="mini-chart" height="80"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Bot Status</div>
+          <div class="bot-status">
+            <div class="pulse ${botRunning?'running':'stopped'}"></div>
+            <div class="status-label ${botRunning?'running':'stopped'}">${botRunning?'Running':'Stopped'}</div>
+            <div class="trades-count">${botStats.total} trades</div>
+          </div>
+          <div class="flex gap-8 mb-8">
+            <button class="btn btn-green" style="flex:1" onclick="startBot()" ${botRunning?'disabled':''}>▶ Start</button>
+            <button class="btn btn-red" style="flex:1" onclick="stopBot()" ${!botRunning?'disabled':''}>■ Stop</button>
+          </div>
+          <div class="divider"></div>
+          <div class="flex gap-8 mt-8">
+            <div style="flex:1">
+              <div class="stat-label">Contract</div>
+              <div class="font-mono text-sm" style="color:${botConfig.contractType==='CALL'?'var(--green)':'var(--red)'}">${botConfig.contractType==='CALL'?'▲ Rise':'▼ Fall'}</div>
+            </div>
+            <div style="flex:1">
+              <div class="stat-label">Stake</div>
+              <div class="font-mono text-sm">${botConfig.amount} ${accountInfo.currency||'USD'}</div>
+            </div>
+            <div style="flex:1">
+              <div class="stat-label">Duration</div>
+              <div class="font-mono text-sm">${botConfig.duration}${botConfig.durationUnit}</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="stat-label mt-8">Win Progress</div>
+          <div class="progress-bar"><div class="progress-fill green" style="width:${winRate}%"></div></div>
+          <div class="flex text-xs text-muted mt-8"><span>${winRate}% Win Rate</span><span class="ml-auto">${botStats.total} / ${botConfig.maxTrades} max</span></div>
+        </div>
+      </div>
+
+      <div class="card mt-8" style="margin-top:16px">
+        <div class="card-title"><span class="dot"></span>Recent Trades</div>
+        <div class="trade-row trade-header">
+          <span>Time</span><span>Market</span><span>Type</span><span>Stake</span><span>P&L</span>
+        </div>
+        <div class="trade-log" id="tradeTableDash">
+          ${renderTradeRows(tradeHistory.slice(0,8))}
+        </div>
+      </div>
+    </div>
+  `;
+  drawChart();
+}
+
+function renderBotPage() {
+  const winRate = botStats.total > 0 ? ((botStats.wins / botStats.total) * 100).toFixed(1) : '0.0';
+  document.getElementById('mainContent').innerHTML = `
+    <div>
+      <div class="card mb-8">
+        <div class="card-title"><span class="dot"></span>Bot Configuration</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Market / Symbol</label>
+            <select class="form-input" id="cfgMarket" onchange="botConfig.market=this.value;subscribeTick(this.value)">
+              <option value="R_10" ${botConfig.market==='R_10'?'selected':''}>Volatility 10</option>
+              <option value="R_25" ${botConfig.market==='R_25'?'selected':''}>Volatility 25</option>
+              <option value="R_50" ${botConfig.market==='R_50'?'selected':''}>Volatility 50</option>
+              <option value="R_75" ${botConfig.market==='R_75'?'selected':''}>Volatility 75</option>
+              <option value="R_100" ${botConfig.market==='R_100'?'selected':''}>Volatility 100</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contract Type</label>
+            <select class="form-input" id="cfgType" onchange="botConfig.contractType=this.value">
+              <option value="CALL" ${botConfig.contractType==='CALL'?'selected':''}>▲ Rise (CALL)</option>
+              <option value="PUT" ${botConfig.contractType==='PUT'?'selected':''}>▼ Fall (PUT)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Stake Amount (${accountInfo.currency||'USD'})</label>
+            <input type="number" class="form-input" id="cfgAmount" value="${botConfig.amount}" min="0.35" step="0.01" onchange="botConfig.amount=parseFloat(this.value)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duration</label>
+            <div style="display:flex;gap:6px">
+              <input type="number" class="form-input" id="cfgDur" value="${botConfig.duration}" min="1" max="60" style="flex:1" onchange="botConfig.duration=parseInt(this.value)">
+              <select class="form-input" id="cfgDurUnit" style="width:70px" onchange="botConfig.durationUnit=this.value">
+                <option value="t" ${botConfig.durationUnit==='t'?'selected':''}>Ticks</option>
+                <option value="s" ${botConfig.durationUnit==='s'?'selected':''}>Sec</option>
+                <option value="m" ${botConfig.durationUnit==='m'?'selected':''}>Min</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Stop Loss (${accountInfo.currency||'USD'})</label>
+            <input type="number" class="form-input" value="${botConfig.stopLoss}" min="1" onchange="botConfig.stopLoss=parseFloat(this.value)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Take Profit (${accountInfo.currency||'USD'})</label>
+            <input type="number" class="form-input" value="${botConfig.takeProfit}" min="1" onchange="botConfig.takeProfit=parseFloat(this.value)">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Max Trades</label>
+            <input type="number" class="form-input" value="${botConfig.maxTrades}" min="1" onchange="botConfig.maxTrades=parseInt(this.value)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Martingale</label>
+            <select class="form-input" onchange="botConfig.martingale=this.value==='true';document.getElementById('mgRow').style.display=botConfig.martingale?'grid':'none'">
+              <option value="false" ${!botConfig.martingale?'selected':''}>Disabled</option>
+              <option value="true" ${botConfig.martingale?'selected':''}>Enabled</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" id="mgRow" style="display:${botConfig.martingale?'grid':'none'}">
+          <div class="form-group">
+            <label class="form-label">Martingale Multiplier</label>
+            <input type="number" class="form-input" value="${botConfig.martingaleMultiplier}" min="1.1" step="0.1" onchange="botConfig.martingaleMultiplier=parseFloat(this.value)">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Bot Control</div>
+        <div class="bot-status">
+          <div class="pulse ${botRunning?'running':'stopped'}"></div>
+          <div class="status-label ${botRunning?'running':'stopped'}">${botRunning?'🟢 Bot Running':'⚫ Bot Stopped'}</div>
+          <div class="trades-count">${botStats.total} trades done</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button class="btn btn-green" style="padding:12px" onclick="startBot()" ${botRunning?'disabled':''}>▶ Start Bot</button>
+          <button class="btn btn-red" style="padding:12px" onclick="stopBot()" ${!botRunning?'disabled':''}>■ Stop Bot</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="stats-row" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
+        <div class="stat-card">
+          <div class="stat-label">Profit/Loss</div>
+          <div class="stat-value ${botStats.profit>=0?'green':'red'}" id="statProfit2">${botStats.profit>=0?'+':''}${botStats.profit.toFixed(2)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Win Rate</div>
+          <div class="stat-value blue">${winRate}%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Wins</div>
+          <div class="stat-value green">${botStats.wins}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Losses</div>
+          <div class="stat-value red">${botStats.losses}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Live Trades</div>
+        <div class="trade-row trade-header">
+          <span>Time</span><span>Mkt</span><span>Type</span><span>$</span><span>P&L</span>
+        </div>
+        <div class="trade-log" id="tradeTableBot">
+          ${renderTradeRows(tradeHistory.slice(0,15))}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderHistory() {
+  document.getElementById('mainContent').innerHTML = `
+    <div style="grid-column:1/-1">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>All Trade History (${tradeHistory.length} trades)</div>
+        <div class="trade-row trade-header">
+          <span>Time</span><span>Market</span><span>Type</span><span>Stake</span><span>P&L</span>
+        </div>
+        <div class="trade-log" style="max-height:500px" id="tradeTableFull">
+          ${tradeHistory.length ? renderTradeRows(tradeHistory) : '<div style="text-align:center;padding:40px;color:var(--text3)">No trades yet. Start the bot!</div>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSettings() {
+  document.getElementById('mainContent').innerHTML = `
+    <div style="grid-column:1/-1;max-width:500px">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Account Info</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Login ID</label><input class="form-input" value="${accountInfo.loginid||''}" readonly></div>
+          <div class="form-group"><label class="form-label">Currency</label><input class="form-input" value="${accountInfo.currency||''}" readonly></div>
+        </div>
+        <div class="form-group mb-8"><label class="form-label">Full Name</label><input class="form-input" value="${accountInfo.fullname||''}" readonly></div>
+        <div class="form-group"><label class="form-label">Balance</label><input class="form-input" value="${balance.toFixed(2)} ${accountInfo.currency||''}" readonly></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-title"><span class="dot"></span>Reset Stats</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Bot statistics reset karo</p>
+        <button class="btn btn-red" onclick="resetStats()">Reset All Stats</button>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-title"><span class="dot"></span>Disconnect</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Account se disconnect karo</p>
+        <button class="btn btn-outline" onclick="logout()">Logout</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderTradeRows(trades) {
+  if (!trades.length) return '<div style="text-align:center;padding:20px;color:var(--text3)">No trades yet</div>';
+  return trades.map(t => `
+    <div class="trade-row">
+      <span class="text-muted">${t.time}</span>
+      <span class="font-mono" style="font-size:11px">${t.market}</span>
+      <span class="type ${t.type==='Rise'?'rise':'fall'}">${t.type==='Rise'?'▲':'▼'} ${t.type}</span>
+      <span class="font-mono">${t.amount}</span>
+      <span class="result ${t.result}" style="${t.result==='pending'?'color:var(--yellow)':''}">${t.result==='pending'?'⏳':t.result==='win'?'+'+t.profit.toFixed(2):t.profit.toFixed(2)}</span>
+    </div>
+  `).join('');
+}
+
+// ─── UI UPDATES ──────────────────────────────────────────
+function updateTickDisplay(t) {
+  const el = document.getElementById('tickPrice');
+  if (el) el.textContent = t.quote;
+  drawChart();
+}
+
+function updateBalanceStat() {
+  const el = document.getElementById('statBalance');
+  if (el) el.textContent = balance.toFixed(2);
+}
+
+function updateBotStats() {
+  const winRate = botStats.total > 0 ? ((botStats.wins / botStats.total) * 100).toFixed(1) : '0.0';
+  ['statProfit','statProfit2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = (botStats.profit >= 0 ? '+' : '') + botStats.profit.toFixed(2);
+      el.className = 'stat-value ' + (botStats.profit >= 0 ? 'green' : 'red');
+    }
+  });
+}
+
+function updateTradeTable() {
+  ['tradeTableDash','tradeTableBot','tradeTableFull'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = renderTradeRows(id==='tradeTableFull' ? tradeHistory : tradeHistory.slice(0,id==='tradeTableDash'?8:15));
+  });
+  // update bot status pulse
+  document.querySelectorAll('.pulse').forEach(el => {
+    el.className = 'pulse ' + (botRunning?'running':'stopped');
+  });
+}
+
+function changeMarket(m) {
+  botConfig.market = m;
+  tickHistory = [];
+  subscribeTick(m);
+  renderDashboard();
+}
+
+function drawChart() {
+  const canvas = document.getElementById('miniChart');
+  if (!canvas || tickHistory.length < 2) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+  const w = canvas.width, h = canvas.height;
+  const prices = tickHistory.map(t => t.price);
+  const min = Math.min(...prices), max = Math.max(...prices);
+  const range = max - min || 1;
+  ctx.clearRect(0, 0, w, h);
+  // gradient fill
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, 'rgba(0,200,120,0.18)');
+  grad.addColorStop(1, 'rgba(0,200,120,0)');
+  ctx.beginPath();
+  prices.forEach((p, i) => {
+    const x = (i / (prices.length - 1)) * w;
+    const y = h - ((p - min) / range) * (h - 10) - 5;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+  // line
+  ctx.beginPath();
+  prices.forEach((p, i) => {
+    const x = (i / (prices.length - 1)) * w;
+    const y = h - ((p - min) / range) * (h - 10) - 5;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#00c878'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+// ─── AUTH ────────────────────────────────────────────────
+function connectAPI() {
+  const t = document.getElementById('tokenInput').value.trim();
+  if (!t) { showToast('Token enter karein!', 'red'); return; }
+  apiToken = t;
+  localStorage.setItem('deriv_token', t);
+  connectDeriv(t);
+}
+
+function logout() {
+  if (ws) ws.close();
+  apiToken = ''; wsReady = false;
+  localStorage.removeItem('deriv_token');
+  botRunning = false;
+  document.getElementById('tokenOverlay').style.display = 'flex';
+  document.getElementById('sideBalance').textContent = '--';
+  document.getElementById('sideAccId').textContent = 'Not connected';
+}
+
+function resetStats() {
+  botStats = { total:0, wins:0, losses:0, profit:0, currentStreak:0 };
+  tradeHistory = [];
+  loadPage(currentPage);
+  showToast('Stats reset!', 'green');
+}
+
+// ─── TOAST ───────────────────────────────────────────────
+function showToast(msg, type='green') {
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid ${type==='green'?'var(--green)':type==='red'?'var(--red)':'var(--yellow)'};color:var(--text);padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;animation:fadeIn .2s;box-shadow:0 4px 20px rgba(0,0,0,.4)`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ─── PWA SETUP ───────────────────────────────────────────
+let deferredPrompt = null;
+
+// Service Worker inline registration
+const swCode = `
+const CACHE = 'deriv-bot-v1';
+const ASSETS = ['/'];
+self.addEventListener('install', e => {
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(clients.claim());
+});
+self.addEventListener('fetch', e => {
+  // Only cache same-origin, pass-through for websockets & external
+  if (e.request.url.startsWith('wss://') || e.request.url.includes('fonts.googleapis')) return;
+  e.respondWith(
+    caches.open(CACHE).then(cache =>
+      cache.match(e.request).then(cached =>
+        cached || fetch(e.request).then(resp => {
+          if(resp && resp.status === 200 && resp.type !== 'opaque') {
+            cache.put(e.request, resp.clone());
+          }
+          return resp;
+        }).catch(() => cached)
+      )
+    )
+  );
+});
+`;
+
+if ('serviceWorker' in navigator) {
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const banner = document.getElementById('installBanner');
+  if (banner && !localStorage.getItem('pwa_banner_closed')) {
+    setTimeout(() => banner.classList.add('show'), 2000);
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+  deferredPrompt = null;
+  showToast('App install ho gaya! 🎉', 'green');
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('installBtn')?.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+    } else {
+      // iOS instructions
+      showToast('Safari mein: Share → Add to Home Screen', 'yellow');
+    }
+    document.getElementById('installBanner').classList.remove('show');
+  });
+  document.getElementById('closeBanner')?.addEventListener('click', () => {
+    document.getElementById('installBanner').classList.remove('show');
+    localStorage.setItem('pwa_banner_closed', '1');
+  });
+});
+
+// Mobile nav sync
+function mobileNav(page, el) {
+  document.querySelectorAll('.mobile-nav-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  // also sync sidebar
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  currentPage = page;
+  loadPage(page);
+}
+
+// Sync bot dot on mobile nav
+const _origStartBot = typeof startBot !== 'undefined' ? startBot : null;
+const _origStopBot = typeof stopBot !== 'undefined' ? stopBot : null;
+
+function updateMobileNavBotDot() {
+  const dot = document.getElementById('mBotDot');
+  if (dot) dot.style.display = botRunning ? 'block' : 'none';
+}
+
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('deriv_token');
+  if (saved) {
+    document.getElementById('tokenInput').value = saved;
+    apiToken = saved;
+    connectDeriv(saved);
+  }
+  loadPage('dashboard');
+});
+</script>
+</body>
+</html>
